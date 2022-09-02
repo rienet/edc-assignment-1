@@ -1,6 +1,7 @@
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.HashMap; // import the HashMap class
+import java.util.Iterator;
 import java.util.List;
 import java.lang.Character;
 
@@ -27,13 +28,22 @@ public class RegexEngine {
             System.out.println("flag on");
         }
 
+        Graph epsilonNFA = new Graph();
+        epsilonNFA.printGraph(epsilonNFA);
+        epsilonNFA.addNode(1);
+        epsilonNFA.addEdge(0, 1, "x");
+        epsilonNFA.addEdge(1, 2, "e");
+
+        epsilonNFA.printGraph(epsilonNFA);
+
+        epsilonNFA.deleteEdge(0, 1, "e");
+
+        epsilonNFA.printGraph(epsilonNFA);
+
         Scanner myObj = new Scanner(System.in);
         System.out.println("Enter username");
 
         parseLine("testing");
-
-        Graph epsilonNFA = new Graph();
-        epsilonNFA.printGraph(epsilonNFA);
         
 
         String userName = myObj.nextLine();
@@ -76,6 +86,27 @@ class Graph {
  
         // draw epsilon edge
         adj_list.get(0).add(new Node(1, "e"));
+    }
+
+    // add a transition to a source node to destination node
+    public void addEdge(int src, int dest, String transition) {
+        adj_list.get(src).add(new Node(dest, transition));
+    }
+
+    // delete a transition to a source node to destination node
+    public void deleteEdge(int src, int dest, String transition) {
+        Iterator<Node> it = adj_list.get(src).iterator();
+        while (it.hasNext()) {
+            Node node = it.next();
+            if (node.dest == dest && node.transition.equals(transition)) {
+                it.remove();
+            }
+        }
+    }
+
+    // add a new state to the system (e.g q1, q2, q3...)
+    public void addNode(int newState) {
+        adj_list.add(newState, new ArrayList<>());
     }
 
     // print adjacency list for the graph
