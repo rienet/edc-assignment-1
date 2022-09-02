@@ -7,14 +7,62 @@ import java.lang.Character;
 
 public class RegexEngine {
     static HashMap<Character, Character> operators = new HashMap<Character, Character>();
+    static boolean first = true;
 
+    // parses given regex and creates a e-nfa out of it
     static void parseLine(String line) {
+        System.out.println(line);
+        Graph epsilonNFA = new Graph();
         for(int i = 0 ; i<line.length(); i++){
+            Character currentChar = line.charAt(i);
 
+            // handling operators
+            if(operators.containsValue(currentChar)){
+
+            // handling non-operators
+            } else if(Character.isLetter(currentChar) || Character.isDigit(currentChar) || 
+                      Character.isWhitespace(currentChar)){
+                        
+                boolean skip = false;
+                boolean last = false;
+                // check if next char is an operator, if so skip to process operator
+                try{
+                    if(operators.containsValue(line.charAt(i+1))){
+                        skip = true;
+                    }
+                // must be last character if exception occured
+                } catch(Exception e){
+                    epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                    int size = epsilonNFA.adj_list.size();
+                    epsilonNFA.addEdge(size-3, size-2, Character.toString(currentChar));
+                    epsilonNFA.addEdge(size-2, size-1, "e");
+                    last = true;
+                }
+
+                if(!skip && !last){
+                    // handle first character in a block
+                    if (first){
+                        // append onto latest node on block
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        // change for alternators later
+                        int size = epsilonNFA.adj_list.size();
+                        epsilonNFA.addEdge(size-4, size-3, "e");
+                        epsilonNFA.addEdge(size-3, size-2, Character.toString(currentChar));
+
+                        first = false;
+                    } else {
+                        // append onto latest node on block
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        int size = epsilonNFA.adj_list.size();
+                        epsilonNFA.addEdge(size-3, size-2, Character.toString(currentChar));
+                    }
+                }
+            }
         }
-    }
 
-    
+        epsilonNFA.printGraph(epsilonNFA);
+    }
 
     public static void main(String[] args) {
         operators.put('(', '(');
@@ -28,22 +76,10 @@ public class RegexEngine {
             System.out.println("flag on");
         }
 
-        Graph epsilonNFA = new Graph();
-        epsilonNFA.printGraph(epsilonNFA);
-        epsilonNFA.addNode(1);
-        epsilonNFA.addEdge(0, 1, "x");
-        epsilonNFA.addEdge(1, 2, "e");
-
-        epsilonNFA.printGraph(epsilonNFA);
-
-        epsilonNFA.deleteEdge(0, 1, "e");
-
-        epsilonNFA.printGraph(epsilonNFA);
-
         Scanner myObj = new Scanner(System.in);
         System.out.println("Enter username");
 
-        parseLine("testing");
+        parseLine("100 5 a A");
         
 
         String userName = myObj.nextLine();
@@ -84,8 +120,6 @@ class Graph {
         adj_list.add(new ArrayList<>());
         adj_list.add(new ArrayList<>());
  
-        // draw epsilon edge
-        adj_list.get(0).add(new Node(1, "e"));
     }
 
     // add a transition to a source node to destination node
@@ -118,7 +152,7 @@ class Graph {
         while (src_vertex < list_size) {
             //traverse through the adjacency list and print the edges
             for (Node edge : graph.adj_list.get(src_vertex)) {
-                System.out.print("Vertex:" + src_vertex + " ==> " + edge.dest + 
+                System.out.print("Vertex:" + src_vertex + " ==> q" + edge.dest + 
                                 " (" + edge.transition + ")\t");
             }
  
