@@ -65,8 +65,14 @@ public class RegexEngine {
 
     // evaluates given input on a line against e nfa
     static void evaluateInput(Graph epsilonNFA, String line) {
-        epsilonNFA.initialiseBaseState(epsilonNFA, line);
+        ArrayList<Character> baseState = epsilonNFA.initialiseBaseState(epsilonNFA);
         
+        System.out.print("Base state: ");
+        System.out.println(baseState);
+
+        epsilonNFA.helperState(epsilonNFA, line);
+        epsilonNFA.flushState();
+
     }
 
     public static void main(String[] args) {
@@ -122,6 +128,7 @@ class Graph {
 
     // keeps track of state of nfa
     ArrayList<Character> state = new ArrayList<Character>();
+    ArrayList<Character> bufferState = new ArrayList<Character>();
  
     // Graph Constructor
     public Graph()
@@ -171,24 +178,27 @@ class Graph {
         }
     }
 
-    // initialise base states of string transition function
-    public void initialiseBaseState(Graph graph, String input)  {
+    // initialise base states of string transition function and return the base states
+    // in a list format
+    public ArrayList<Character> initialiseBaseState(Graph graph)  {
         ArrayList<Character> visited = new ArrayList<Character>();
 
         for(int i = 0; i<graph.adj_list.size(); i++){
             // initialise all states to be inactive
             state.add('n');
             visited.add('n');
+            bufferState.add('n');
         }
 
         // start at the base node
         int SRC_VERTEX = 0;
         traverseBaseState(graph, SRC_VERTEX, visited);
 
-        System.out.println(state);
+        return state;
     }
 
-    // traverse the graph recursively - base version
+    // traverse the graph recursively - base version where we only
+    // set the epsilon states
     public void traverseBaseState(Graph graph, int currentState, List<Character> visited) {
         // log current state as visited and count it as a base state
         state.set(currentState, 'a');
@@ -196,9 +206,60 @@ class Graph {
 
         // go to all nodes traversable by an epsilon if we havent been there before
         for (Node edge : graph.adj_list.get(currentState)) {
-            if(edge.transition == "e" &&  visited.get(edge.dest) != 'v'){
+            if(edge.transition.equals("e") &&  visited.get(edge.dest) != 'v'){
                 traverseBaseState(graph, edge.dest, visited);
             }
         }
+    }
+
+    // helper function to evaluate regex after base state is initialised
+    public void helperState(Graph graph, String input){
+        for(int i = 0; i<input.length(); i++){
+            bufferState.replaceAll(e -> 'n');
+
+            System.out.println("the loop is on: " + Character.toString(input.charAt(i)));
+            // perform transition in active states
+            for(int currentState = 0; currentState<state.size(); currentState++){
+                if(state.get(currentState).equals('a')){
+                    for (Node edge : graph.adj_list.get(currentState)) {
+                        // transition on regex matches on edges
+                        System.out.println("state is this: " + currentState);
+                        System.out.println(edge.transition + " into " + edge.dest);
+                        if(edge.transition.equals("e") || edge.transition.equals(Character.toString(input.charAt(i)))){
+                            System.out.println("transition: " + Character.toString(input.charAt(i)));
+                            bufferState.set(edge.dest, 'a');
+                        }
+                    }
+                }
+            }
+            state.clear();
+            state.addAll(bufferState);
+        }
+
+        bufferState.replaceAll(e -> 'n');
+
+        // finish off by resolving e transitions
+        for(int currentState = 0; currentState<state.size(); currentState++){
+            if(state.get(currentState).equals('a')){
+                for (Node edge : graph.adj_list.get(currentState)) {
+                    // transition on regex matches on edges
+                    System.out.println("state is this: " + currentState);
+                    System.out.println(edge.transition + " into " + edge.dest);
+                    if(edge.transition.equals("e")){
+                        bufferState.set(edge.dest, 'a');
+                    }
+                }
+            }
+        }
+
+        state.clear();
+        state.addAll(bufferState);
+
+        System.out.println(state);
+    }
+
+    public void flushState() {
+        state.clear();
+        bufferState.clear();
     }
 }
