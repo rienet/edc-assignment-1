@@ -17,6 +17,20 @@ public class RegexEngine {
 
             // handling operators
             if(operators.containsValue(currentChar)){
+                //an operator cannot be the first character in a string
+                // except for brackets
+                if(first = true && currentChar != '('){
+                    // invalid input
+                    System.out.println("Invalid input detected"); 
+                    System.exit(1);
+                }
+
+                if(currentChar == '+'){
+                    System.out.println("ligma balls");
+                } else if(currentChar == '*') {
+                    System.out.println("sugmaballs");
+                }
+
 
             // handling non-operators
             } else if(Character.isLetter(currentChar) || Character.isDigit(currentChar) || 
@@ -57,6 +71,10 @@ public class RegexEngine {
                         epsilonNFA.addEdge(size-3, size-2, Character.toString(currentChar));
                     }
                 }
+            } else {
+                // invalid input
+                System.out.println("Invalid input detected"); 
+                System.exit(1);
             }
         }
         epsilonNFA.printGraph(epsilonNFA);
@@ -67,12 +85,17 @@ public class RegexEngine {
     static void evaluateInput(Graph epsilonNFA, String line) {
         ArrayList<Character> baseState = epsilonNFA.initialiseBaseState(epsilonNFA);
         
-        System.out.print("Base state: ");
-        System.out.println(baseState);
+        //System.out.print("Base state: ");
+        //System.out.println(baseState);
 
         epsilonNFA.helperState(epsilonNFA, line);
-        epsilonNFA.flushState();
+        if (epsilonNFA.state.get(epsilonNFA.state.size() - 1).equals('a')){
+            System.out.println("true");
+        } else{
+            System.out.println("false");
+        }
 
+        epsilonNFA.flushState();
     }
 
     public static void main(String[] args) {
@@ -82,15 +105,14 @@ public class RegexEngine {
         operators.put('+', '+');
         operators.put('*', '*');
 
-        
-        if(args.length > 0){
-            System.out.println("flag on");
-        }
 
         Scanner myObj = new Scanner(System.in);
         String regex = myObj.nextLine();
         Graph stateDiagram = parseLine(regex);
-        System.out.println(regex);
+        if(args.length > 0){
+            stateDiagram.printTable(stateDiagram);
+        }
+
         System.out.println("ready");
         
         while(true){
@@ -217,16 +239,16 @@ class Graph {
         for(int i = 0; i<input.length(); i++){
             bufferState.replaceAll(e -> 'n');
 
-            System.out.println("the loop is on: " + Character.toString(input.charAt(i)));
+            //System.out.println("the loop is on: " + Character.toString(input.charAt(i)));
             // perform transition in active states
             for(int currentState = 0; currentState<state.size(); currentState++){
                 if(state.get(currentState).equals('a')){
                     for (Node edge : graph.adj_list.get(currentState)) {
                         // transition on regex matches on edges
-                        System.out.println("state is this: " + currentState);
-                        System.out.println(edge.transition + " into " + edge.dest);
+                        //System.out.println("state is this: " + currentState);
+                        //System.out.println(edge.transition + " into " + edge.dest);
                         if(edge.transition.equals("e") || edge.transition.equals(Character.toString(input.charAt(i)))){
-                            System.out.println("transition: " + Character.toString(input.charAt(i)));
+                            //System.out.println("transition: " + Character.toString(input.charAt(i)));
                             bufferState.set(edge.dest, 'a');
                         }
                     }
@@ -243,8 +265,8 @@ class Graph {
             if(state.get(currentState).equals('a')){
                 for (Node edge : graph.adj_list.get(currentState)) {
                     // transition on regex matches on edges
-                    System.out.println("state is this: " + currentState);
-                    System.out.println(edge.transition + " into " + edge.dest);
+                    //System.out.println("state is this: " + currentState);
+                    //System.out.println(edge.transition + " into " + edge.dest);
                     if(edge.transition.equals("e")){
                         bufferState.set(edge.dest, 'a');
                     }
@@ -255,11 +277,64 @@ class Graph {
         state.clear();
         state.addAll(bufferState);
 
-        System.out.println(state);
+        //System.out.println(state);
     }
 
     public void flushState() {
         state.clear();
         bufferState.clear();
+    }
+
+    public void printTable(Graph graph){
+        int src_vertex = 0;
+        int list_size = graph.adj_list.size();
+        ArrayList<String> transitionFunctions = new ArrayList<>();
+        transitionFunctions.add("e");
+ 
+        while (src_vertex < list_size) {
+            // traverse through the adjacency list and store unique edges
+            for (Node edge : graph.adj_list.get(src_vertex)) {
+                if(!transitionFunctions.contains(edge.transition)){
+                    transitionFunctions.add(edge.transition);
+                }
+            }
+            src_vertex++;
+        }
+
+        final Object[][] table = new String[list_size+1][transitionFunctions.size()+2];
+
+        for(int i = 0; i<table.length; i++){
+            for(int j = 0; j<table[i].length; j++){
+                table[i][j] = "";
+            }
+        }
+
+        for(int i = 0; i<transitionFunctions.size(); i++){
+            table[0][i+1] = transitionFunctions.get(i);
+        }
+        table[0][1] = "epsilon";
+        table[0][transitionFunctions.size()+1] = "other";
+
+        src_vertex = 0;
+
+        while (src_vertex < list_size) {
+            table[src_vertex+1][0] = "q"+ Integer.toString(src_vertex);
+            for (Node edge : graph.adj_list.get(src_vertex)) {
+                table[src_vertex+1][transitionFunctions.indexOf(edge.transition)+1] +=
+                "q" + edge.dest;
+            }
+            src_vertex++;
+        }
+
+        String columns = new String("");
+        for (int i = 0; i<transitionFunctions.size()+2; i++){
+            columns = columns.concat("%-15s");
+        }
+
+        for (final Object[] row : table) {
+            System.out.format(columns + "\n", row);
+        }
+
+        System.out.println();
     }
 }
