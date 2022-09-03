@@ -8,6 +8,7 @@ import java.lang.Character;
 public class RegexEngine {
     static HashMap<Character, Character> operators = new HashMap<Character, Character>();
     static boolean first = true;
+    static int opCount = 0;
 
     // parses given regex and creates a e-nfa out of it
     static Graph parseLine(String line) {
@@ -19,18 +20,65 @@ public class RegexEngine {
             if(operators.containsValue(currentChar)){
                 //an operator cannot be the first character in a string
                 // except for brackets
-                if(first = true && currentChar != '('){
+                if(first == true && currentChar != '('){
                     // invalid input
-                    System.out.println("Invalid input detected"); 
+                    System.out.println("Invalid input detected, operator cannot be first"); 
                     System.exit(1);
                 }
 
-                if(currentChar == '+'){
-                    System.out.println("ligma balls");
-                } else if(currentChar == '*') {
-                    System.out.println("sugmaballs");
-                }
+                // handling kleene star
+                if(currentChar == '*'){
+                    // there cannot be an operator behind a kleene star
+                    Character previousChar = line.charAt(i-1);
+                    if(operators.containsValue(previousChar)){
+                        // invalid input
+                        System.out.println("Invalid input detected, operator behind *"); 
+                        System.exit(1);
+                    }
 
+                    boolean last = false;
+                    // check if next char is an operator, if so skip to process operator
+                    try{
+                        if(operators.containsValue(line.charAt(i+1))){
+                            //skip = true;
+                        }
+                    // must be last character if exception occured
+                    } catch(Exception e){
+                        // append onto latest node on block
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        // change for alternators later
+                        int size = epsilonNFA.adj_list.size();
+                        epsilonNFA.addEdge(size-3, size-2, "e");
+                        epsilonNFA.addEdge(size-2, size-1, "e");
+                        epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
+                        last = true;
+                    }
+
+                    if(!last){
+                        // append onto latest node on block
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        // change for alternators later
+                        int size = epsilonNFA.adj_list.size();
+                        epsilonNFA.addEdge(size-3, size-2, "e");
+                        epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
+                    }
+
+                    //track and increment the number of operations so far
+                    opCount++;
+
+                // handling plus
+                } else if(currentChar == '+') {
+                    // there cannot be an operator behind a plus
+                    Character previousChar = line.charAt(i-1);
+                    if(operators.containsValue(previousChar)){
+                        // invalid input
+                        System.out.println("Invalid input detected"); 
+                        System.exit(1);
+                    }
+
+                    System.out.println("sugmaballs");
+
+                }
 
             // handling non-operators
             } else if(Character.isLetter(currentChar) || Character.isDigit(currentChar) || 
@@ -42,6 +90,7 @@ public class RegexEngine {
                 try{
                     if(operators.containsValue(line.charAt(i+1))){
                         skip = true;
+                        first = false;
                     }
                 // must be last character if exception occured
                 } catch(Exception e){
@@ -65,10 +114,22 @@ public class RegexEngine {
 
                         first = false;
                     } else {
+                        Character previousChar = line.charAt(i-1);
                         // append onto latest node on block
+      
+
                         epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
                         int size = epsilonNFA.adj_list.size();
+
+                        // operators fucks with add edges for some arcane reason idk
+                        if(previousChar == '*'){
+                            String previousPreviousChar = Character.toString(line.charAt(i-2));
+                            epsilonNFA.addEdge(size-3, size-3, previousPreviousChar);
+                            epsilonNFA.deleteEdge(size-2, size-3, previousPreviousChar);
+                        }
+                        
                         epsilonNFA.addEdge(size-3, size-2, Character.toString(currentChar));
+                  
                     }
                 }
             } else {
@@ -256,26 +317,27 @@ class Graph {
             }
             state.clear();
             state.addAll(bufferState);
-        }
 
-        bufferState.replaceAll(e -> 'n');
-
-        // finish off by resolving e transitions
-        for(int currentState = 0; currentState<state.size(); currentState++){
-            if(state.get(currentState).equals('a')){
-                for (Node edge : graph.adj_list.get(currentState)) {
-                    // transition on regex matches on edges
-                    //System.out.println("state is this: " + currentState);
-                    //System.out.println(edge.transition + " into " + edge.dest);
-                    if(edge.transition.equals("e")){
-                        bufferState.set(edge.dest, 'a');
+            // finish off by resolving e transitions, sure there can't be more than
+            // 2 epsilons in a row or smth idk
+            for(int currentState = 0; currentState<state.size(); currentState++){
+                if(state.get(currentState).equals('a')){
+                    for (Node edge : graph.adj_list.get(currentState)) {
+                        // transition on regex matches on edges
+                        //System.out.println("state is this: " + currentState);
+                        //System.out.println(edge.transition + " into " + edge.dest);
+                        if(edge.transition.equals("e")){
+                            bufferState.set(edge.dest, 'a');
+                        }
                     }
                 }
             }
+
+            state.clear();
+            state.addAll(bufferState);
         }
 
-        state.clear();
-        state.addAll(bufferState);
+        bufferState.replaceAll(e -> 'n');
 
         //System.out.println(state);
     }
