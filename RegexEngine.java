@@ -48,8 +48,8 @@ public class RegexEngine {
                         epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
                         // change for alternators later
                         int size = epsilonNFA.adj_list.size();
-                        epsilonNFA.addEdge(size-3, size-2, "e");
-                        epsilonNFA.addEdge(size-2, size-1, "e");
+                        epsilonNFA.addEdge(size-3, size-2, "epsilon");
+                        epsilonNFA.addEdge(size-2, size-1, "epsilon");
                         epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
                         last = true;
                     }
@@ -59,7 +59,7 @@ public class RegexEngine {
                         epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
                         // change for alternators later
                         int size = epsilonNFA.adj_list.size();
-                        epsilonNFA.addEdge(size-3, size-2, "e");
+                        epsilonNFA.addEdge(size-3, size-2, "epsilon");
                         epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
                     }
 
@@ -90,8 +90,8 @@ public class RegexEngine {
                         // change for alternators later
                         int size = epsilonNFA.adj_list.size();
                         epsilonNFA.addEdge(size-4, size-3, Character.toString(previousChar));
-                        epsilonNFA.addEdge(size-3, size-2, "e");
-                        epsilonNFA.addEdge(size-2, size-1, "e");
+                        epsilonNFA.addEdge(size-3, size-2, "epsilon");
+                        epsilonNFA.addEdge(size-2, size-1, "epsilon");
                         epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
                         last = true;
                     }
@@ -103,7 +103,7 @@ public class RegexEngine {
                         // change for alternators later
                         int size = epsilonNFA.adj_list.size();
                         epsilonNFA.addEdge(size-4, size-3, Character.toString(previousChar));
-                        epsilonNFA.addEdge(size-3, size-2, "e");
+                        epsilonNFA.addEdge(size-3, size-2, "epsilon");
                         epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
                     }
                 }
@@ -124,8 +124,20 @@ public class RegexEngine {
                 } catch(Exception e){
                     epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
                     int size = epsilonNFA.adj_list.size();
+
+                    // check aainst single letter regex
+                    if (line.length() > 1){
+                        Character previousChar = line.charAt(i-1);
+                        // operators fucks with add edges for some arcane reason idk
+                        if(previousChar == '*' || previousChar == '+'){
+                            String previousPreviousChar = Character.toString(line.charAt(i-2));
+                            epsilonNFA.addEdge(size-3, size-3, previousPreviousChar);
+                            epsilonNFA.deleteEdge(size-2, size-3, previousPreviousChar);
+                        }
+                    }
+                        
                     epsilonNFA.addEdge(size-3, size-2, Character.toString(currentChar));
-                    epsilonNFA.addEdge(size-2, size-1, "e");
+                    epsilonNFA.addEdge(size-2, size-1, "epsilon");
                     last = true;
                 }
 
@@ -137,14 +149,13 @@ public class RegexEngine {
                         epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
                         // change for alternators later
                         int size = epsilonNFA.adj_list.size();
-                        epsilonNFA.addEdge(size-4, size-3, "e");
+                        epsilonNFA.addEdge(size-4, size-3, "epsilon");
                         epsilonNFA.addEdge(size-3, size-2, Character.toString(currentChar));
 
                         first = false;
                     } else {
                         Character previousChar = line.charAt(i-1);
                         // append onto latest node on block
-      
 
                         epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
                         int size = epsilonNFA.adj_list.size();
@@ -317,8 +328,23 @@ class Graph {
 
         // go to all nodes traversable by an epsilon if we havent been there before
         for (Node edge : graph.adj_list.get(currentState)) {
-            if(edge.transition.equals("e") &&  visited.get(edge.dest) != 'v'){
+            if(edge.transition.equals("epsilon") &&  visited.get(edge.dest) != 'v'){
                 traverseBaseState(graph, edge.dest, visited);
+            }
+        }
+    }
+
+    // traverse the graph recursively seting the epsilon states
+    public void traverseEpsilons(Graph graph, int currentState, List<Character> visited) {
+        // log current state as visited and count it as a base state
+        
+        visited.set(currentState, 'v');
+
+        // go to all nodes traversable by an epsilon if we havent been there before
+        for (Node edge : graph.adj_list.get(currentState)) {
+            if(edge.transition.equals("epsilon") &&  visited.get(edge.dest) != 'v'){
+                traverseBaseState(graph, edge.dest, visited);
+                bufferState.set(edge.dest, 'a');
             }
         }
     }
@@ -336,28 +362,24 @@ class Graph {
                         // transition on regex matches on edges
                         //System.out.println("state is this: " + currentState);
                         //System.out.println(edge.transition + " into " + edge.dest);
-                        if(edge.transition.equals("e") || edge.transition.equals(Character.toString(input.charAt(i)))){
+                        if(edge.transition.equals(Character.toString(input.charAt(i)))){
                             //System.out.println("transition: " + Character.toString(input.charAt(i)));
                             bufferState.set(edge.dest, 'a');
                         }
                     }
                 }
             }
-            state.clear();
-            state.addAll(bufferState);
 
-            // finish off by resolving e transitions, sure there can't be more than
-            // 2 epsilons in a row or smth idk
+            // finish off by resolving e transitions recursively
             for(int currentState = 0; currentState<state.size(); currentState++){
-                if(state.get(currentState).equals('a')){
-                    for (Node edge : graph.adj_list.get(currentState)) {
-                        // transition on regex matches on edges
-                        //System.out.println("state is this: " + currentState);
-                        //System.out.println(edge.transition + " into " + edge.dest);
-                        if(edge.transition.equals("e")){
-                            bufferState.set(edge.dest, 'a');
-                        }
+                if(bufferState.get(currentState).equals('a')){
+                    ArrayList<Character> visited = new ArrayList<Character>();
+                    for(int j = 0; j<graph.adj_list.size(); j++){
+                        // initialise all states to be inactive
+                        visited.add('n');
                     }
+
+                    traverseEpsilons(graph, currentState, visited);
                 }
             }
 
@@ -367,7 +389,7 @@ class Graph {
 
         bufferState.replaceAll(e -> 'n');
 
-        //System.out.println(state);
+        System.out.println(state);
     }
 
     public void flushState() {
@@ -379,7 +401,7 @@ class Graph {
         int src_vertex = 0;
         int list_size = graph.adj_list.size();
         ArrayList<String> transitionFunctions = new ArrayList<>();
-        transitionFunctions.add("e");
+        transitionFunctions.add("epsilon");
  
         while (src_vertex < list_size) {
             // traverse through the adjacency list and store unique edges
