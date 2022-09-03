@@ -76,8 +76,36 @@ public class RegexEngine {
                         System.exit(1);
                     }
 
-                    System.out.println("sugmaballs");
+                    boolean last = false;
+                    // check if next char is an operator, if so skip to process operator
+                    try{
+                        if(operators.containsValue(line.charAt(i+1))){
+                            //skip = true;
+                        }
+                    // must be last character if exception occured
+                    } catch(Exception e){
+                        // append onto latest node on block
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        // change for alternators later
+                        int size = epsilonNFA.adj_list.size();
+                        epsilonNFA.addEdge(size-4, size-3, Character.toString(previousChar));
+                        epsilonNFA.addEdge(size-3, size-2, "e");
+                        epsilonNFA.addEdge(size-2, size-1, "e");
+                        epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
+                        last = true;
+                    }
 
+                    if(!last){
+                        // append onto latest node on block
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        epsilonNFA.addNode(epsilonNFA.adj_list.size()-2);
+                        // change for alternators later
+                        int size = epsilonNFA.adj_list.size();
+                        epsilonNFA.addEdge(size-4, size-3, Character.toString(previousChar));
+                        epsilonNFA.addEdge(size-3, size-2, "e");
+                        epsilonNFA.addEdge(size-2, size-2, Character.toString(previousChar));
+                    }
                 }
 
             // handling non-operators
@@ -122,7 +150,7 @@ public class RegexEngine {
                         int size = epsilonNFA.adj_list.size();
 
                         // operators fucks with add edges for some arcane reason idk
-                        if(previousChar == '*'){
+                        if(previousChar == '*' || previousChar == '+'){
                             String previousPreviousChar = Character.toString(line.charAt(i-2));
                             epsilonNFA.addEdge(size-3, size-3, previousPreviousChar);
                             epsilonNFA.deleteEdge(size-2, size-3, previousPreviousChar);
