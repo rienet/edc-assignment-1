@@ -10,8 +10,7 @@ public class RegexEngine {
     static boolean first = true;
 
     // parses given regex and creates a e-nfa out of it
-    static void parseLine(String line) {
-        System.out.println(line);
+    static Graph parseLine(String line) {
         Graph epsilonNFA = new Graph();
         for(int i = 0 ; i<line.length(); i++){
             Character currentChar = line.charAt(i);
@@ -60,8 +59,14 @@ public class RegexEngine {
                 }
             }
         }
-
         epsilonNFA.printGraph(epsilonNFA);
+        return epsilonNFA;
+    }
+
+    // evaluates given input on a line against e nfa
+    static void evaluateInput(Graph epsilonNFA, String line) {
+        epsilonNFA.initialiseBaseState(epsilonNFA, line);
+        
     }
 
     public static void main(String[] args) {
@@ -77,13 +82,15 @@ public class RegexEngine {
         }
 
         Scanner myObj = new Scanner(System.in);
-        System.out.println("Enter username");
-
-        parseLine("100 5 a A");
+        String regex = myObj.nextLine();
+        Graph stateDiagram = parseLine(regex);
+        System.out.println(regex);
+        System.out.println("ready");
         
-
-        String userName = myObj.nextLine();
-        System.out.println("Username is: " + userName);
+        while(true){
+            String input = myObj.nextLine();
+            evaluateInput(stateDiagram, input);
+        }
     }
 }
 
@@ -112,6 +119,9 @@ class Graph {
  
     // define adjacency list
     List<List<Node>> adj_list = new ArrayList<>();
+
+    // keeps track of state of nfa
+    ArrayList<Character> state = new ArrayList<Character>();
  
     // Graph Constructor
     public Graph()
@@ -158,6 +168,37 @@ class Graph {
  
             System.out.println();
             src_vertex++;
+        }
+    }
+
+    // initialise base states of string transition function
+    public void initialiseBaseState(Graph graph, String input)  {
+        ArrayList<Character> visited = new ArrayList<Character>();
+
+        for(int i = 0; i<graph.adj_list.size(); i++){
+            // initialise all states to be inactive
+            state.add('n');
+            visited.add('n');
+        }
+
+        // start at the base node
+        int SRC_VERTEX = 0;
+        traverseBaseState(graph, SRC_VERTEX, visited);
+
+        System.out.println(state);
+    }
+
+    // traverse the graph recursively - base version
+    public void traverseBaseState(Graph graph, int currentState, List<Character> visited) {
+        // log current state as visited and count it as a base state
+        state.set(currentState, 'a');
+        visited.set(currentState, 'v');
+
+        // go to all nodes traversable by an epsilon if we havent been there before
+        for (Node edge : graph.adj_list.get(currentState)) {
+            if(edge.transition == "e" &&  visited.get(edge.dest) != 'v'){
+                traverseBaseState(graph, edge.dest, visited);
+            }
         }
     }
 }
