@@ -32,7 +32,7 @@ public class RegexEngine {
                     Character previousChar = line.charAt(i-1);
                     if(operators.containsValue(previousChar)){
                         // invalid input
-                        System.out.println("Invalid input detected, operator behind *"); 
+                        System.out.println("Invalid input detected, invalid operator behind operator"); 
                         System.exit(1);
                     }
 
@@ -72,7 +72,7 @@ public class RegexEngine {
                     Character previousChar = line.charAt(i-1);
                     if(operators.containsValue(previousChar)){
                         // invalid input
-                        System.out.println("Invalid input detected"); 
+                        System.out.println("Invalid input detected, invalid operator behind operator"); 
                         System.exit(1);
                     }
 
@@ -182,20 +182,22 @@ public class RegexEngine {
     }
 
     // evaluates given input on a line against e nfa
-    static void evaluateInput(Graph epsilonNFA, String line) {
+    static String evaluateInput(Graph epsilonNFA, String line) {
         ArrayList<Character> baseState = epsilonNFA.initialiseBaseState(epsilonNFA);
         
         //System.out.print("Base state: ");
         //System.out.println(baseState);
 
+        String eval = new String();
         epsilonNFA.helperState(epsilonNFA, line);
         if (epsilonNFA.state.get(epsilonNFA.state.size() - 1).equals('a')){
-            System.out.println("true");
+            eval = "true";
         } else{
-            System.out.println("false");
+            eval = "false";
         }
 
         epsilonNFA.flushState();
+        return eval;
     }
 
     public static void main(String[] args) {
@@ -217,7 +219,8 @@ public class RegexEngine {
         
         while(true){
             String input = myObj.nextLine();
-            evaluateInput(stateDiagram, input);
+            String print = evaluateInput(stateDiagram, input);
+            System.out.println(print);
         }
     }
 }
