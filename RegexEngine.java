@@ -177,7 +177,7 @@ public class RegexEngine {
                 System.exit(1);
             }
         }
-        epsilonNFA.printGraph(epsilonNFA);
+        //epsilonNFA.printGraph(epsilonNFA);
         return epsilonNFA;
     }
 
@@ -389,7 +389,7 @@ class Graph {
 
         bufferState.replaceAll(e -> 'n');
 
-        System.out.println(state);
+        //System.out.println(state);
     }
 
     public void flushState() {
